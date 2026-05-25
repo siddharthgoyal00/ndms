@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NISAR Data Monitoring System</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+
+    <!-- ── NAVBAR ─────────────────────────────────────────────────────────── -->
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span>NISAR Data Monitoring System</span>
+        </div>
+
+        <!-- ETL Status -->
+        <div id="etlStatus" class="etl-status">
+            <span id="etlDot" class="status-dot"></span>
+            <span id="etlText">ETL Loading...</span>
+        </div>
+
+        <div class="nav-actions">
+            <!-- ETL Trigger Button (dev only — remove before production) -->
+            <button id="triggerEtlBtn" class="nav-btn etl-trigger-btn" title="Manually trigger ETL run">
+                ▶ Run ETL
+            </button>
+
+            <!-- Chat Toggle -->
+            <a id="chatToggle" class="nav-btn" style="cursor:pointer;">Chat</a>
+        </div>
+    </nav>
+
+    <!-- ── AI CHAT WIDGET ──────────────────────────────────────────────────── -->
+    <div class="chat-widget" id="chatWidget">
+        <div class="chat-header" id="chatHeader">
+            <div class="chat-title">
+                <span class="online-indicator"></span>
+                AI Assistant
+            </div>
+            <button class="close-chat" id="closeChat">&times;</button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="message ai">
+                Hi there! I'm your AI assistant. How can I help you with your observations today?
+            </div>
+        </div>
+        <div class="chat-footer">
+            <div class="chat-input-wrapper">
+                <input type="text" id="chatInput" placeholder="Ask me anything...">
+            </div>
+            <button id="sendChat" class="send-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- ── MAIN CONTENT ────────────────────────────────────────────────────── -->
+    <div class="main-container">
+
+        <!-- Filters Sidebar -->
+        <div class="filters-sidebar">
+            <div class="filters-title">
+                Add filters
+                <button id="searchBtn">search</button>
+            </div>
+            <div id="searchError" class="error-message" aria-live="polite"></div>
+
+            <div class="filter-row" data-filter="Ob_id">
+                <div class="filter-label">Ob_id</div>
+                <div class="toggle-switch-container"><div class="toggle-switch-circle"></div></div>
+                <input class="filter-input" type="text" placeholder="Enter variable">
+            </div>
+
+            <div class="filter-row" data-filter="Rc_id">
+                <div class="filter-label">Rc_id</div>
+                <div class="toggle-switch-container"><div class="toggle-switch-circle"></div></div>
+                <input class="filter-input" type="text" placeholder="Enter">
+            </div>
+
+            <div class="filter-row" data-filter="Session_id">
+                <div class="filter-label">Session_id</div>
+                <div class="toggle-switch-container"><div class="toggle-switch-circle"></div></div>
+                <input class="filter-input" type="text" placeholder="Enter">
+            </div>
+
+            <div class="filter-row ssar-filter" data-filter="SSAR_TIME">
+                <div class="filter-label">CMD Start and End Date, Time</div>
+                <div class="toggle-switch-container"><div class="toggle-switch-circle"></div></div>
+                <div class="ssar-inputs">
+                    <input class="filter-input start-time" type="datetime-local">
+                    <input class="filter-input end-time" type="datetime-local">
+                </div>
+            </div>
+
+            <div class="filter-row" data-filter="WO_id">
+                <div class="filter-label">W/O_id</div>
+                <div class="toggle-switch-container"><div class="toggle-switch-circle"></div></div>
+                <input class="filter-input" type="text" placeholder="Enter">
+            </div>
+
+            <div class="filter-row" data-filter="L0_status">
+                <div class="filter-label">L0 status</div>
+                <div class="toggle-switch-container"><div class="toggle-switch-circle"></div></div>
+                <select class="filter-input">
+                    <option value="completed">Completed</option>
+                    <option value="not completed">Not completed</option>
+                </select>
+            </div>
+
+            <div class="filter-row" data-filter="cycle">
+                <div class="filter-label">Cycle</div>
+                <div class="toggle-switch-container"><div class="toggle-switch-circle"></div></div>
+                <input class="filter-input" type="text" placeholder="Enter cycle number">
+            </div>
+        </div>
+
+        <!-- Chart Area -->
+        <div class="chart-area">
+            <div class="chart-toolbar">
+                <div class="toolbar-title">Analytics Charts</div>
+                <div class="toolbar-actions">
+                    <select id="chartTypeSelect" class="nav-btn">
+                        <option value="monthly" selected>Monthly</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                    <button id="downloadChartsCsv" class="nav-btn">Download CSV</button>
+                </div>
+            </div>
+            <div class="chart-content">
+                <canvas id="rcChart" width="100" height="50"></canvas>
+            </div>
+        </div>
+
+        <!-- Map Area -->
+        <div class="chart-area">
+            <div id="map"></div>
+        </div>
+
+    </div>
+
+    <!-- ── ANALYTIC TABLE ──────────────────────────────────────────────────── -->
+    <div class="table-section">
+        <div class="table-title">Analytic Table</div>
+        <table class="analytic-table">
+            <thead>
+                <tr>
+                    <th>COP_Count</th>
+                    <th>L0<br>Completed<br>Count</th>
+                    <th>DPGS<br>Completed<br>Count</th>
+                    <th>Failed<br>L0 Count</th>
+                    <th>Failed<br>DPGS Count</th>
+                    <th>RC_ID<br>Count</th>
+                    <th>Session_id<br>Count</th>
+                    <th>Observation_Id<br>Count</th>
+                    <th>DataTake_Id<br>Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td></td><td></td><td></td><td></td><td></td>
+                    <td></td><td></td><td></td><td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── INFORMATION TABLE ───────────────────────────────────────────────── -->
+    <div class="info-table-section">
+        <div class="table-title">Information Table</div>
+        <table class="observation-table">
+            <thead>
+                <tr>
+                    <th>Cycle No</th>
+                    <th>Rc_ID</th>
+                    <th>Track</th>
+                    <th>Frame</th>
+                    <th>Observation_ID</th>
+                    <th>Scene No</th>
+                    <th>CRID_ID</th>
+                    <th>MW_ID</th>
+                    <th>WO_ID</th>
+                    <th>Product</th>
+                    <th>Product Status</th>
+                    <th>L0 Status</th>
+                    <th>Session_ID</th>
+                    <th>Datatake_ID</th>
+                    <th>Dump Orbit</th>
+                    <th>Start Imaging Time</th>
+                    <th>End Imaging Time</th>
+                </tr>
+            </thead>
+            <tbody id="observationTableBody">
+                <!-- filled by data_table.js -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div id="pagination"></div>
+
+    <!-- ── SCRIPTS (order matters) ─────────────────────────────────────────── -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- utils first -->
+    <script src="js/utils/pagination.js"></script>
+    <script src="js/utils/csv_export.js"></script>
+
+    <!-- components -->
+    <script src="js/components/filters.js"></script>
+    <script src="js/components/map.js"></script>
+    <script src="js/components/chart.js"></script>
+    <script src="js/components/analytics_table.js"></script>
+    <script src="js/components/data_table.js"></script>
+    <script src="js/components/ai_chat.js"></script>
+    <script src="js/components/etl_trigger.js"></script>
+
+    <!-- api + main last -->
+    <script src="js/api.js"></script>
+    <script src="js/main.js"></script>
+
+</body>
+</html>

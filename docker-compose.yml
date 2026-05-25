@@ -1,0 +1,160 @@
+version: "3.9"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# NISAR Analytics Platform — 5 Container Stack
+#
+# Startup order:
+#   mysql + mariadb (source DBs, dumps auto-load)
+#       ↓
+#   postgres (analytics DB, schema auto-creates)
+#       ↓
+#   etl (waits for all 3 DBs healthy, then ready for trigger)
+#       ↓
+#   frontend (nginx, serves dashboard)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+services:
+
+  # ── 1. MySQL — source DB A ─────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    command: >
+      --default-authentication-plugin=mysql_native_password
+      --max_allowed_packet=256M
+      --innodb_buffer_pool_size=512M
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_DATABASE:      source_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST:     "%"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./data/mysql:/docker-entrypoint-initdb.d:ro   # auto-loads on first start
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=root"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s    # mysql takes time to init + load dump
+
+  # ── 2. MariaDB — source DB B ───────────────────────────────────────────────
+  mariadb:
+    image: mariadb:10.11
+    container_name: mariadb_db
+    ports:
+      - "3307:3306"          # 3308 on host avoids clash with mysql's 3306
+    environment:
+      MYSQL_DATABASE:      source_db
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST:     "%"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./data/mariadb:/docker-entrypoint-initdb.d:ro  # auto-loads on first start
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=root"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+
+  # ── 3. PostgreSQL — analytics DB ───────────────────────────────────────────
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB:       analytics_db
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro  # creates schemas + tables
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d analytics_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+
+  # ── 4. ETL Service ─────────────────────────────────────────────────────────
+  etl_service:
+    build:
+      context: ./etl
+      dockerfile: Dockerfile
+    image: nisar_etl:latest
+    container_name: pipeline_etl
+    ports:
+      - "5001:5001"
+    environment:
+      # PostgreSQL — analytics store
+      PG_HOST:      postgres_db
+      PG_DB:        analytics_db
+      PG_USER:      postgres
+      PG_PASSWORD:  postgres
+      PG_PORT:      5432
+
+      # MySQL — source A
+      MYSQL_HOST:     mysql_db
+      MYSQL_DB:       source_db
+      MYSQL_USER:     root
+      MYSQL_PASSWORD: root
+      MYSQL_PORT:     3306
+
+      # MariaDB — source B
+      MARIADB_HOST:     mariadb_db
+      MARIADB_DB:       source_db
+      MARIADB_USER:     root
+      MARIADB_PASSWORD: root
+      MARIADB_PORT:     3306
+    volumes:
+      - ./etl:/app                 # live code mount — no rebuild needed during dev
+    networks:
+      - app_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      mariadb:
+        condition: service_healthy
+    restart: on-failure
+
+  # ── 5. Frontend — Nginx ────────────────────────────────────────────────────
+  frontend:
+    image: nginx:alpine
+    container_name: project_frontend
+    ports:
+      - "8080:80"
+    volumes:
+      - ./frontend/src:/usr/share/nginx/html:ro
+      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - app_net
+    depends_on:
+      - etl_service
+    restart: unless-stopped
+
+# ── Volumes ────────────────────────────────────────────────────────────────────
+volumes:
+  postgres_data:
+  mysql_data:
+  mariadb_data:
+
+# ── Networks ───────────────────────────────────────────────────────────────────
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.200.0.0/16
+          gateway: 192.200.0.1
+
