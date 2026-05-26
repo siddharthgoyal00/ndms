@@ -37,42 +37,42 @@ The NISAR Data Management System (NDMS) is a satellite observation analytics pla
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         FRONTEND (8080)                             │
-│  - Leaflet Map    - Data Tables    - Charts    - AI Chat Widget    │
-│  - Filter Panel   - CSV Export     - Pagination                    │
+│  - Leaflet Map    - Data Tables    - Charts    - AI Chat Widget     │
+│  - Filter Panel   - CSV Export     - Pagination                     │
 └──────────────────┬──────────────────────────────────────────────────┘
                    │ CORS-enabled HTTPS/HTTP
                    ↓
 ┌──────────────────────────────────────────────────────────────────────┐
 │                    BACKEND (5000) — Flask                            │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │ /api/search          → Paginated observation table         │    │
-│  │ /api/analytics       → Summary counts                       │    │
-│  │ /api/rc_stats        → Pre-aggregated chart data            │    │
-│  │ /api/map_polygons    → WKT geometries for map             │    │
-│  │ /api/ai/query        → Text-to-SQL AI assistant           │    │
-│  │ /api/etl/trigger     → Proxy to ETL service               │    │
-│  │ /api/etl/status      → Read from etl_runs table            │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└──────────────────┬──────────────────────────────────────────────────┘
+│  ┌─────────────────────────────────────────────────────────────┐     │
+│  │ /api/search          → Paginated observation table          │     │
+│  │ /api/analytics       → Summary counts                       │     │
+│  │ /api/rc_stats        → Pre-aggregated chart data            │     │
+│  │ /api/map_polygons    → WKT geometries for map               │     │
+│  │ /api/ai/query        → Text-to-SQL AI assistant             │     │ 
+│  │ /api/etl/trigger     → Proxy to ETL service                 │     │
+│  │ /api/etl/status      → Read from etl_runs table             │     │
+│  └─────────────────────────────────────────────────────────────┘     │
+└──────────────────┬───────────────────────────────────────────────────┘
                    │ psycopg2 / TCP 5432
                    ↓
 ┌──────────────────────────────────────────────────────────────────────┐
 │              ETL SERVICE (5001) — Flask + Threading                  │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │ POST /etl/trigger  → Runs Phase 1 + Phase 2 in background  │    │
-│  │ GET  /etl/status   → Returns last run status               │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-└──────────────┬────────────────────────┬─────────────────────────────┘
+│  ┌─────────────────────────────────────────────────────────────┐     │
+│  │ POST /etl/trigger  → Runs Phase 1 + Phase 2 in background   │     │
+│  │ GET  /etl/status   → Returns last run status                │     │
+│  └─────────────────────────────────────────────────────────────┘     │
+└──────────────┬────────────────────────┬──────────────────────────────┘
                │                        │
         ┌──────┴──────┐          ┌──────┴──────┐
         ↓             ↓          ↓             ↓
     ┌────────┐   ┌────────┐  ┌─────────┐  ┌──────────┐
-    │ MySQL  │   │MariaDB │  │PostgreSQL│  │ PostgreSQL│
+    │ MySQL  │   │MariaDB │  │PostgreSQL│ │PostgreSQL│
     │ (3308) │   │ (3307) │  │ (5432)  │  │ (5432)   │
     │        │   │        │  │ RAW     │  │ PUBLIC   │
     └────────┘   └────────┘  │ SCHEMA  │  │ANALYTIC  │
                              └─────────┘  │ TABLES   │
-                                         └──────────┘
+                                          └──────────┘
 ```
 
 ---
@@ -835,37 +835,37 @@ VALUES ('SUCCESS', 'TRANSFORM', NOW(), row_count);
 ```
 Frontend UI
 ┌─────────────────────────────────────────────────┐
-│ User Input: Date Range, RC ID, L0 Status, etc  │
+│ User Input: Date Range, RC ID, L0 Status, etc   │
 │ ↓                                               │
-│ filters.js: collectFilters() returns object:   │
+│ filters.js: collectFilters() returns object:    │
 │ {                                               │
 │   cmd_start: "2024-01-01",                      │
 │   cmd_end: "2024-12-31",                        │
 │   Rc_id: "RC001",                               │
 │   L0_status: "Completed",                       │
-│   Session_id: "001"  (auto-prefixed → ssid_)   │
-│   Ob_id: "OBS*"      (wildcard)                │
+│   Session_id: "001"  (auto-prefixed → ssid_)    │
+│   Ob_id: "OBS*"      (wildcard)                 |
 │ }                                               │
 │                                                 │
 │ ↓                                               │
-│ api.js: API.search(filters, page) calls        │
-│ fetch("http://localhost:5001/search?..." + URLSearchParams)
-│                                                 │
+│ api.js: API.search(filters, page) calls         │
+│ fetch("http://localhost:5001/search?..."        |
+│           + URLSearchParams)                    │
 └─────────────────────────────────────────────────┘
         ↓
     Backend API
 ┌─────────────────────────────────────────────────┐
-│ GET /api/search?cmd_start=...&Rc_id=...&...    │
+│ GET /api/search?cmd_start=...&Rc_id=...&...     │
 │                                                 │
 │ observations.py: search()                       │
-│ ├─ get_page_params(filters) → page, limit, offset
-│ ├─ build_where_clause(filters)                 │
-│ │  └─ Returns: (WHERE_sql, params_list)        │
-│ ├─ SELECT COUNT(*) FROM analytic_table         │
-│ │  WHERE 1=1 AND ... (for total_rows)         │
-│ ├─ SELECT * FROM analytic_table                │
-│ │  WHERE 1=1 AND ... LIMIT 25 OFFSET 0        │
-│ └─ Return JSON with observations, pagination   │
+│ ├─ get_page_params(filters) → page,limit,offset |
+│ ├─ build_where_clause(filters)                  │
+│ │  └─ Returns: (WHERE_sql, params_list)         │
+│ ├─ SELECT COUNT(*) FROM analytic_table          │
+│ │  WHERE 1=1 AND ... (for total_rows)           │
+│ ├─ SELECT * FROM analytic_table                 │
+│ │  WHERE 1=1 AND ... LIMIT 25 OFFSET 0          │
+│ └─ Return JSON with observations, pagination    │
 │                                                 │
 └─────────────────────────────────────────────────┘
         ↓
@@ -878,26 +878,26 @@ Frontend UI
 │    Only 2024 partition selected (based on date) │
 │                                                 │
 │ 2. Index Selection (Query Planner):             │
-│    If Rc_id + date range → idx_at_cfg_time     │
-│    If only date range    → idx_at_time_btree   │
-│    If L0_status filter   → idx_at_l0           │
+│    If Rc_id + date range → idx_at_cfg_time      │
+│    If only date range    → idx_at_time_btree    │
+│    If L0_status filter   → idx_at_l0            │
 │                                                 │
 │ 3. Bitmap Index Scan / Seq Scan                 │
-│    Merge with remaining WHERE conditions       │
+│    Merge with remaining WHERE conditions        │
 │                                                 │
-│ 4. Sort by CMD_SSAR_START_DATETIME DESC        │
-│ 5. LIMIT 25 OFFSET 0                           │
+│ 4. Sort by CMD_SSAR_START_DATETIME DESC         │
+│ 5. LIMIT 25 OFFSET 0                            │ 
 │                                                 │
-│ Returns: 25 rows + total count (separate query)│
+│ Returns: 25 rows + total count (separate query) │
 └─────────────────────────────────────────────────┘
         ↓
     Frontend UI
 ┌─────────────────────────────────────────────────┐
 │ data_table.js: renderObservationTable()         │
 │ ├─ Render 25 rows in HTML table                 │
-│ ├─ Render pagination (page 1 of 42)            │
-│ ├─ Enable "Next", "Previous" buttons           │
-│ └─ Update status: "Showing 1-25 of 1050"      │
+│ ├─ Render pagination (page 1 of 42)             │
+│ ├─ Enable "Next", "Previous" buttons            │
+│ └─ Update status: "Showing 1-25 of 1050"        │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -968,7 +968,7 @@ def build_where_clause(filters: dict) -> tuple[str, list]:
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    PRESENTATION LAYER                       │
-│  Frontend (Vue.js)      Dashboard (Leaflet Map + Tables)   │
+│  Frontend (Vue.js)      Dashboard (Leaflet Map + Tables)    │
 └──────────────────────────┬──────────────────────────────────┘
                            │ RESTful API (JSON)
 ┌──────────────────────────┴──────────────────────────────────┐
@@ -1002,22 +1002,22 @@ def build_where_clause(filters: dict) -> tuple[str, list]:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    ETL ORCHESTRATION (Phase 1+2)               │
+│                    ETL ORCHESTRATION (Phase 1+2)                │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  Phase 1: Raw Load                                              │
 │  ─────────────────────────────────────────────────────────────  │
-│  MySQL ──[Discovery + Copy]──→  raw.{table}_mysql              │
-│  MariaDB ──[Discovery + Copy]─→  raw.{table}_mariadb           │
-│  (Type mapping, batch processing, watermark filter)            │
+│  MySQL ──[Discovery + Copy]──→  raw.{table}_mysql               │
+│  MariaDB ──[Discovery + Copy]─→  raw.{table}_mariadb            │
+│  (Type mapping, batch processing, watermark filter)             │
 │                                                                 │
 │  Phase 2: Transform & Optimize                                  │
 │  ─────────────────────────────────────────────────────────────  │
 │  raw schema ──[CTE + JOIN + UNION]──→ analytic_table_new        │
-│  (Denormalize, index, partition, rc_cache, mv refresh)         │
-│  ──[Blue-Green Swap]──→ analytic_table (LIVE)                  │
+│  (Denormalize, index, partition, rc_cache, mv refresh)          │
+│  ──[Blue-Green Swap]──→ analytic_table (LIVE)                   │
 │                                                                 │
-│  ETL Audit                                                       │
+│  ETL Audit                                                      │
 │  ─────────────────────────────────────────────────────────────  │
 │  etl_runs (status, phase, rows, watermark)                      │
 │                                                                 │
@@ -1329,7 +1329,7 @@ Dashboard data automatically refreshes with new analytic_table
 │    │ Session ID: 001                  │                                     │
 │    │ [Apply Filters] button           │                                     │
 │    └──────────────────────────────────┘                                     │
-│                    ↓                                                         │
+│                    ↓                                                        | 
 └─────────────────────────────────────────────────────────────────────────────┘
                      │ collectFilters() returns object
                      ↓
@@ -1341,22 +1341,22 @@ Dashboard data automatically refreshes with new analytic_table
 │  ┌──────────────────────────────────────────────────────────────────┐       │
 │  │ function collectFilters() {                                      │       │
 │  │   return {                                                       │       │
-│  │     cmd_start: "2024-01-01",                                    │       │
-│  │     cmd_end: "2024-12-31",                                      │       │
-│  │     Rc_id: "RC001",                                             │       │
-│  │     L0_status: "Completed",                                     │       │
-│  │     Session_id: "001"  // auto-prefixed to "ssid_001" by backend│       │
+│  │     cmd_start: "2024-01-01",                                     │       │
+│  │     cmd_end: "2024-12-31",                                       │       │
+│  │     Rc_id: "RC001",                                              │       │
+│  │     L0_status: "Completed",                                      │       │
+│  │     Session_id: "001"  // auto-prefixed to "ssid_001" by backend │       │
 │  │   }                                                              │       │
 │  │ }                                                                │       │
 │  └──────────────────────────────────────────────────────────────────┘       │
-│                    ↓                                                         │
+│                    ↓                                                        │
 │  api.js:                                                                    │
 │  ┌──────────────────────────────────────────────────────────────────┐       │
 │  │ API.search(filters, page=1)                                      │       │
 │  │ fetch(BASE + "/search?" + new URLSearchParams(filters))          │       │
 │  │ .then(r => r.json())                                             │       │
 │  └──────────────────────────────────────────────────────────────────┘       │
-│                    ↓                                                         │
+│                    ↓                                                        │
 └─────────────────────────────────────────────────────────────────────────────┘
          │ HTTP GET /api/search?cmd_start=2024-01-01&cmd_end=...&Rc_id=...
          ↓
@@ -1365,47 +1365,47 @@ Dashboard data automatically refreshes with new analytic_table
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  app.py: Flask receives GET request                                         │
-│    ↓                                                                         │
+│    ↓                                                                        │
 │  observations.py: search()                                                  │
 │  ┌────────────────────────────────────────────────────────────────┐         │
-│  │ 1. Extract query params: page, limit, offset                  │         │
+│  │ 1. Extract query params: page, limit, offset                   │         │
 │  │                                                                │         │
-│  │ 2. Call build_where_clause(filters) from queries.py           │         │
-│  │    Result:                                                    │         │
-│  │    where_sql = """WHERE 1=1                                  │         │
-│  │        AND CMD_SSAR_START_DATETIME >= %s                     │         │
-│  │        AND CMD_SSAR_END_DATETIME <= %s                       │         │
-│  │        AND SSAR_CONFIG_ID = %s                               │         │
-│  │        AND LOWER(L0_status) = %s                             │         │
-│  │        AND SESS_ID LIKE %s"""                                │         │
-│  │    params = [                                                │         │
-│  │      "2024-01-01 00:00:00",                                  │         │
-│  │      "2024-12-31 23:59:59",                                  │         │
-│  │      "RC001",                                                │         │
-│  │      "completed",                                            │         │
-│  │      "ssid_001"                                              │         │
-│  │    ]                                                          │         │
+│  │ 2. Call build_where_clause(filters) from queries.py            │         │
+│  │    Result:                                                     │         │
+│  │    where_sql = """WHERE 1=1                                    │         │
+│  │        AND CMD_SSAR_START_DATETIME >= %s                       │         │
+│  │        AND CMD_SSAR_END_DATETIME <= %s                         │         │
+│  │        AND SSAR_CONFIG_ID = %s                                 │         │
+│  │        AND LOWER(L0_status) = %s                               │         │
+│  │        AND SESS_ID LIKE %s"""                                  │         │
+│  │    params = [                                                  │         │
+│  │      "2024-01-01 00:00:00",                                    │         │
+│  │      "2024-12-31 23:59:59",                                    │         │
+│  │      "RC001",                                                  │         │
+│  │      "completed",                                              │         │
+│  │      "ssid_001"                                                │         │
+│  │    ]                                                           │         │
 │  │                                                                │         │
-│  │ 3. Execute COUNT query:                                       │         │
-│  │    SELECT COUNT(*) as total                                  │         │
-│  │    FROM public.analytic_table a                              │         │
-│  │    WHERE 1=1 AND ... (all conditions)                        │         │
-│  │    Result: total_rows = 1050                                 │         │
-│  │            total_pages = 42                                  │         │
+│  │ 3. Execute COUNT query:                                        │         │
+│  │    SELECT COUNT(*) as total                                    │         │
+│  │    FROM public.analytic_table a                                │         │
+│  │    WHERE 1=1 AND ... (all conditions)                          │         │
+│  │    Result: total_rows = 1050                                   │         │
+│  │            total_pages = 42                                    │         │
 │  │                                                                │         │
-│  │ 4. Execute DATA query:                                        │         │
-│  │    SELECT observation_id, SSAR_CONFIG_ID, SESS_ID, ...       │         │
-│  │    FROM public.analytic_table a                              │         │
-│  │    WHERE 1=1 AND ... (all conditions)                        │         │
-│  │    ORDER BY CMD_SSAR_START_DATETIME DESC                     │         │
-│  │    LIMIT 25 OFFSET 0                                         │         │
-│  │    Result: [row1, row2, ..., row25]                          │         │
+│  │ 4. Execute DATA query:                                         │         │
+│  │    SELECT observation_id, SSAR_CONFIG_ID, SESS_ID, ...         │         │
+│  │    FROM public.analytic_table a                                │         │
+│  │    WHERE 1=1 AND ... (all conditions)                          │         │
+│  │    ORDER BY CMD_SSAR_START_DATETIME DESC                       │         │
+│  │    LIMIT 25 OFFSET 0                                           │         │
+│  │    Result: [row1, row2, ..., row25]                            │         │
 │  │                                                                │         │
-│  │ 5. Convert timestamps to ISO format                           │         │
+│  │ 5. Convert timestamps to ISO format                            │         │
 │  │                                                                │         │
-│  │ 6. Return JSON response                                       │         │
+│  │ 6. Return JSON response                                        │         │
 │  └────────────────────────────────────────────────────────────────┘         │
-│                    ↓                                                         │
+│                    ↓                                                        │
 └─────────────────────────────────────────────────────────────────────────────┘
          │ JSON response
          ↓
@@ -1416,28 +1416,28 @@ Dashboard data automatically refreshes with new analytic_table
 │  PostgreSQL Query Optimizer:                                                │
 │  1. Parse WHERE conditions                                                  │
 │  2. PARTITION PRUNING:                                                      │
-│     - Date range: 2024-01-01 to 2024-12-31                                 │
+│     - Date range: 2024-01-01 to 2024-12-31                                  │
 │     - Only scan: analytic_2024 partition                                    │
-│     - Skip: analytic_2023, 2025, 2026, 2027, default                       │
+│     - Skip: analytic_2023, 2025, 2026, 2027, default                        │
 │                                                                             │
 │  3. INDEX SELECTION (Cost-based planner):                                   │
-│     Option A: idx_at_cfg_time (SSAR_CONFIG_ID, CMD_SSAR_START_DATETIME)    │
+│     Option A: idx_at_cfg_time (SSAR_CONFIG_ID, CMD_SSAR_START_DATETIME)     │
 │               (best for combined RC_ID + date range filter)                 │
-│     Option B: idx_at_time_btree (CMD_SSAR_START_DATETIME)                  │
-│               (good for date-only, but need to filter L0_status)           │
+│     Option B: idx_at_time_btree (CMD_SSAR_START_DATETIME)                   │
+│               (good for date-only, but need to filter L0_status)            │
 │     Option C: Bitmap Index Scan                                             │
-│               (combine multiple indexes via bitmap merge)                    │
-│     Planner chooses: Option A (idx_at_cfg_time)                            │
+│               (combine multiple indexes via bitmap merge)                   │
+│     Planner chooses: Option A (idx_at_cfg_time)                             │
 │                                                                             │
 │  4. SCAN PLAN:                                                              │
-│     Index Scan on analytic_2024 using idx_at_cfg_time                      │
-│     ├─ Filter: SSAR_CONFIG_ID = 'RC001'                                    │
-│     ├─ Filter: CMD_SSAR_START_DATETIME >= '2024-01-01'                     │
-│     └─ Filter: CMD_SSAR_START_DATETIME <= '2024-12-31'                     │
+│     Index Scan on analytic_2024 using idx_at_cfg_time                       │
+│     ├─ Filter: SSAR_CONFIG_ID = 'RC001'                                     │
+│     ├─ Filter: CMD_SSAR_START_DATETIME >= '2024-01-01'                      │
+│     └─ Filter: CMD_SSAR_START_DATETIME <= '2024-12-31'                      │
 │                                                                             │
 │  5. POST-INDEX FILTERS:                                                     │
-│     ├─ LOWER(L0_status) = 'completed'  (can't use index, apply here)       │
-│     └─ SESS_ID LIKE 'ssid_001'         (can't use index, apply here)       │
+│     ├─ LOWER(L0_status) = 'completed'  (can't use index, apply here)        │
+│     └─ SESS_ID LIKE 'ssid_001'         (can't use index, apply here)        │
 │                                                                             │
 │  6. SORT: ORDER BY CMD_SSAR_START_DATETIME DESC                             │
 │                                                                             │
@@ -1456,11 +1456,11 @@ Dashboard data automatically refreshes with new analytic_table
 │  {                                                                          │
 │    "observations": [                                                        │
 │      {                                                                      │
-│        "REFOBS_ID": "OBS_20240115_001",                                    │
-│        "SSAR_CONFIG_ID": "RC001",                                          │
-│        "SESS_ID": "ssid_20240115",                                         │
-│        "CMD_SSAR_START_DATETIME": "2024-01-15T10:30:45",                   │
-│        "L0_status": "Completed",                                           │
+│        "REFOBS_ID": "OBS_20240115_001",                                     │
+│        "SSAR_CONFIG_ID": "RC001",                                           │
+│        "SESS_ID": "ssid_20240115",                                          │
+│        "CMD_SSAR_START_DATETIME": "2024-01-15T10:30:45",                    │
+│        "L0_status": "Completed",                                            │
 │        ...                                                                  │
 │      },                                                                     │
 │      ... (24 more rows)                                                     │
@@ -1470,28 +1470,28 @@ Dashboard data automatically refreshes with new analytic_table
 │    "total_rows": 1050                                                       │
 │  }                                                                          │
 │          ↓                                                                  │
-│  data_table.js: renderObservationTable(data)                               │
-│  ├─ Render HTML table with 25 rows                                         │
-│  ├─ Show pagination info: "Showing 1-25 of 1,050 observations"             │
-│  ├─ Render pagination buttons:                                             │
-│  │  [First]  [< Previous]  [1] [2] [3] ... [42]  [Next >]  [Last]          │
-│  ├─ Attach click handlers to pagination                                    │
-│  └─ Render analytics summary updated                                       │
+│  data_table.js: renderObservationTable(data)                                │
+│  ├─ Render HTML table with 25 rows                                          │
+│  ├─ Show pagination info: "Showing 1-25 of 1,050 observations"              │
+│  ├─ Render pagination buttons:                                              │
+│  │  [First]  [< Previous]  [1] [2] [3] ... [42]  [Next >]  [Last]           │
+│  ├─ Attach click handlers to pagination                                     │
+│  └─ Render analytics summary updated                                        │
 │                                                                             │
 │  USER SEES:                                                                 │
-│  ┌─────────────────────────────────────┐                                   │
-│  │ Filtered Data Table (25 rows shown) │                                   │
-│  ├────────────────────────────────────+┤                                   │
-│  │ ID   │ RC  │ Session │ Status   │ ...                                   │
-│  ├──────┼─────┼─────────┼──────────┤                                       │
-│  │ OBS01│RC001│ssid_... │Completed │ ...                                   │
-│  │ OBS02│RC001│ssid_... │Completed │ ...                                   │
-│  │ ...  │ ... │  ...    │   ...    │                                       │
-│  ├─────────────────────────────────────┤                                   │
-│  │ Showing 1-25 of 1,050 observations  │                                   │
-│  │ [First] [< Prev] [1][2][3]...[Next] │                                   │
-│  └─────────────────────────────────────┘                                   │
-│                                                                             │
+│  ┌─────────────────────────────────────┐                                    │
+│  │ Filtered Data Table (25 rows shown) │                                    │
+│  ├────────────────────────────────────+┤                                    │
+│  │ ID   │ RC  │ Session │ Status   │ ...                                    │
+│  ├──────┼─────┼─────────┼──────────┤                                        │
+│  │ OBS01│RC001│ssid_... │Completed │ ...                                    │
+│  │ OBS02│RC001│ssid_... │Completed │ ...                                    │
+│  │ ...  │ ... │  ...    │   ...    │                                        │
+│  ├─────────────────────────────────────┤                                    │
+│  │ Showing 1-25 of 1,050 observations  │                                    │
+│  │ [First] [< Prev] [1][2][3]...[Next] │                                    │
+│  └─────────────────────────────────────┘                                    │
+│                                                                             |
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -1503,11 +1503,11 @@ Dashboard data automatically refreshes with new analytic_table
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                             │
 │  Frontend: User clicks "Run ETL" button                                     │
-│    ↓                                                                         │
+│    ↓                                                                        │
 │  etl_trigger.js: API.triggerEtl()                                           │
-│    ↓                                                                         │
+│    ↓                                                                        │
 │  api.js: fetch("POST /api/etl/trigger", {method: "POST"})                   │
-│    ↓                                                                         │
+│    ↓                                                                        │
 │  Backend (app.py): POST /api/etl/trigger                                    │
 │    ├─ Proxy to: requests.post("http://pipeline_etl:5001/etl/trigger")       │
 │    └─ Return immediately (don't wait)                                       │
@@ -1526,209 +1526,209 @@ Dashboard data automatically refreshes with new analytic_table
 │    └─ Return HTTP 202 Accepted immediately                                  │
 │                                                                             │
 │  Background Thread: run_full_etl()                                          │
-│    ↓                                                                         │
+│    ↓                                                                        │
 │    ═════════════════════════════════════════════════════════════════        │
 │    PHASE 1: RAW LOAD (MySQL + MariaDB → PostgreSQL raw schema)              │
 │    ═════════════════════════════════════════════════════════════════        │
 │                                                                             │
-│    ┌─────────────────────────────────┐                                      │
-│    │  MySQL Connection (3308)        │                                      │
-│    │  ├─ SHOW TABLES                 │                                      │
-│    │  │  Result: [cop_observation, scene, nisar_product_info, ...]         │
-│    │  │                              │                                      │
-│    │  └─ For each table:             │                                      │
-│    │     ├─ DESCRIBE table           │                                      │
-│    │     │  Result: columns + types  │                                      │
-│    │     │                           │                                      │
-│    │     ├─ Map types:               │                                      │
-│    │     │  varchar → TEXT           │                                      │
-│    │     │  int → INTEGER            │                                      │
-│    │     │  datetime → TIMESTAMP     │                                      │
-│    │     │                           │                                      │
-│    │     ├─ CREATE TABLE in postgres │                                      │
-│    │     │  CREATE TABLE raw.cop_observation_mysql (  │                     │
-│    │     │    col1 TEXT, col2 INTEGER, ...            │                     │
-│    │     │  );                                        │                     │
-│    │     │                           │                                      │
-│    │     └─ Copy rows in batches:    │                                      │
-│    │        Batch 1 (rows 1-500):   │                                      │
-│    │        SELECT * FROM cop_observation LIMIT 500 OFFSET 0               │
-│    │        INSERT INTO raw.cop_observation_mysql ...                      │
-│    │        ↓                        │                                      │
-│    │        Batch 2 (rows 501-1000):│                                      │
-│    │        SELECT * FROM cop_observation LIMIT 500 OFFSET 500             │
-│    │        INSERT INTO raw.cop_observation_mysql ...                      │
-│    │        ↓                        │                                      │
-│    │        ... (repeat until < 500) │                                      │
-│    │                              │                                      │
-│    │  Result: 123,456 rows copied  │                                      │
-│    └─────────────────────────────────┘                                      │
-│              ↓                                                               │
+│    ┌──────────────────────────────────────────────────────────────────┐     |                                 
+│    │  MySQL Connection (3308)                                         |     │
+│    │  ├─ SHOW TABLES                                                  |     │
+│    │  │  Result: [cop_observation, scene, nisar_product_info, ...]    |     │ 
+│    │  │                                                               │     │
+│    │  └─ For each table:                                              │     │
+│    │     ├─ DESCRIBE table                                            │     │
+│    │     │  Result: columns + types                                   │     │
+│    │     │                                                            │     │
+│    │     ├─ Map types:                                                │     │
+│    │     │  varchar → TEXT                                            │     │
+│    │     │  int → INTEGER                                             │     │
+│    │     │  datetime → TIMESTAMP                                      │     │
+│    │     │                                                            │     │
+│    │     ├─ CREATE TABLE in postgres                                  │     │
+│    │     │  CREATE TABLE raw.cop_observation_mysql (                  │     │
+│    │     │    col1 TEXT, col2 INTEGER, ...                            │     │
+│    │     │  );                                                        │     │
+│    │     │                                                            │     │
+│    │     └─ Copy rows in batches:                                     │     │
+│    │        Batch 1 (rows 1-500):                                     │     │
+│    │        SELECT * FROM cop_observation LIMIT 500 OFFSET 0          │     |
+│    │        INSERT INTO raw.cop_observation_mysql ...                 │     |
+│    │        ↓                                                         │     │
+│    │        Batch 2 (rows 501-1000):                                  │     │
+│    │        SELECT * FROM cop_observation LIMIT 500 OFFSET 500        │     |
+│    │        INSERT INTO raw.cop_observation_mysql ...                 │     |
+│    │        ↓                                                         │     │
+│    │        ... (repeat until < 500)                                  │     │
+│    │                                                                  │     │
+│    │  Result: 123,456 rows copied                                     │     │
+│    └──────────────────────────────────────────────────────────────────┘     │
+│              ↓                                                              │
 │    ┌─────────────────────────────────┐                                      │
 │    │ MariaDB Connection (3307)       │                                      │
 │    │ (Same process as MySQL)         │                                      │
 │    │  Result: 234,567 rows copied    │                                      │
 │    └─────────────────────────────────┘                                      │
-│              ↓                                                               │
+│              ↓                                                              │
 │    Record Phase 1 in etl_runs:                                              │
-│    INSERT INTO public.etl_runs (status, phase, start_time, rows_processed) │
-│    VALUES ('SUCCESS', 'RAW_LOAD', '2024-01-15 10:00:00', 358023);          │
+│    INSERT INTO public.etl_runs (status, phase, start_time, rows_processed)  │
+│    VALUES ('SUCCESS', 'RAW_LOAD', '2024-01-15 10:00:00', 358023);           │
 │                                                                             │
 │    ═════════════════════════════════════════════════════════════════        │
 │    PHASE 2: TRANSFORM + OPTIMIZE                                            │
 │    ═════════════════════════════════════════════════════════════════        │
 │                                                                             │
 │    ┌──────────────────────────────────────────────────────┐                 │
-│    │ Step 1: Get Watermark (for incremental load)        │                 │
+│    │ Step 1: Get Watermark (for incremental load)         │                 │
 │    │                                                      │                 │
-│    │ SELECT last_processed_time FROM etl_runs            │                 │
-│    │ WHERE status = 'SUCCESS'                            │                 │
-│    │ ORDER BY id DESC LIMIT 1;                           │                 │
+│    │ SELECT last_processed_time FROM etl_runs             │                 │
+│    │ WHERE status = 'SUCCESS'                             │                 │
+│    │ ORDER BY id DESC LIMIT 1;                            │                 │
 │    │                                                      │                 │
-│    │ Result: 2024-01-10 09:00:00                         │                 │
-│    │ Watermark = 2024-01-10 08:55:00 (subtract 5 min)    │                 │
+│    │ Result: 2024-01-10 09:00:00                          │                 │
+│    │ Watermark = 2024-01-10 08:55:00 (subtract 5 min)     │                 │
 │    │                                                      │                 │
-│    │ Only load/update records modified after watermark:  │                 │
-│    │ WHERE CMD_SSAR_START_DATETIME >= '2024-01-10 08:55' │                 │
+│    │ Only load/update records modified after watermark:   │                 │
+│    │ WHERE CMD_SSAR_START_DATETIME >= '2024-01-10 08:55'  │                 │
 │    └──────────────────────────────────────────────────────┘                 │
-│                       ↓                                                      │
+│                       ↓                                                     │
 │    ┌──────────────────────────────────────────────────────┐                 │
-│    │ Step 2: Create Shadow Table (analytic_table_new)    │                 │
+│    │ Step 2: Create Shadow Table (analytic_table_new)     │                 │
 │    │                                                      │                 │
-│    │ DROP TABLE IF EXISTS public.analytic_table_new      │                 │
+│    │ DROP TABLE IF EXISTS public.analytic_table_new       │                 │
 │    │                                                      │                 │
-│    │ CREATE TABLE public.analytic_table_new (            │                 │
-│    │   observation_id TEXT,                              │                 │
-│    │   SESS_ID TEXT,                                     │                 │
-│    │   CMD_SSAR_START_DATETIME TIMESTAMP,                │                 │
-│    │   ...                                               │                 │
-│    │ )                                                   │                 │
-│    │ PARTITION BY RANGE (CMD_SSAR_START_DATETIME)        │                 │
-│    │ WITH (FILLFACTOR = 70);                             │                 │
+│    │ CREATE TABLE public.analytic_table_new (             │                 │
+│    │   observation_id TEXT,                               │                 │
+│    │   SESS_ID TEXT,                                      │                 │
+│    │   CMD_SSAR_START_DATETIME TIMESTAMP,                 │                 │
+│    │   ...                                                │                 │ 
+│    │ )                                                    │                 │
+│    │ PARTITION BY RANGE (CMD_SSAR_START_DATETIME)         │                 │
+│    │ WITH (FILLFACTOR = 70);                              │                 │
 │    │                                                      │                 │
-│    │ CREATE TABLE analytic_2024 PARTITION OF ...         │                 │
-│    │   FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')  │                 │
-│    │ ... (more partitions for 2025, 2026, etc)           │                 │
+│    │ CREATE TABLE analytic_2024 PARTITION OF ...          │                 │
+│    │   FOR VALUES FROM ('2024-01-01') TO ('2025-01-01')   │                 │
+│    │ ... (more partitions for 2025, 2026, etc)            │                 │
 │    └──────────────────────────────────────────────────────┘                 │
-│                       ↓                                                      │
+│                       ↓                                                     │
 │    ┌──────────────────────────────────────────────────────┐                 │
-│    │ Step 3: CTE Pipeline → INSERT (Transform data)      │                 │
+│    │ Step 3: CTE Pipeline → INSERT (Transform data)       │                 │
 │    │                                                      │                 │
-│    │ WITH cop_clean AS (                                 │                 │
-│    │   SELECT col1, col2, ...                            │                 │
-│    │   FROM raw.cop_observation_mysql m                  │                 │
-│    │   LEFT JOIN raw.scene_mysql s                       │                 │
-│    │     ON m.REFOBS_ID = s.observation_ref              │                 │
-│    │   WHERE CMD_SSAR_START_DATETIME >= '2024-01-10 ...' │                 │
-│    │ ),                                                  │                 │
-│    │ base AS (                                           │                 │
-│    │   SELECT col1, col2, ...                            │                 │
-│    │   FROM raw.cop_observation_mariadb d                │                 │
-│    │   LEFT JOIN raw.scene_mariadb s                     │                 │
-│    │   WHERE ...                                         │                 │
-│    │ ),                                                  │                 │
-│    │ unpivoted AS (                                      │                 │
-│    │   SELECT ..., 'RIFG' as product_name FROM cop_clean │                 │
-│    │   UNION ALL                                         │                 │
-│    │   SELECT ..., 'RIFF' as product_name FROM base      │                 │
-│    │   UNION ALL                                         │                 │
-│    │   ... (8 product types: RIFG, RIFF, ...)            │                 │
-│    │ )                                                   │                 │
-│    │ INSERT INTO public.analytic_table_new               │                 │
-│    │ SELECT * FROM unpivoted;                            │                 │
+│    │ WITH cop_clean AS (                                  │                 │
+│    │   SELECT col1, col2, ...                             │                 │
+│    │   FROM raw.cop_observation_mysql m                   │                 │
+│    │   LEFT JOIN raw.scene_mysql s                        │                 │
+│    │     ON m.REFOBS_ID = s.observation_ref               │                 │
+│    │   WHERE CMD_SSAR_START_DATETIME >= '2024-01-10 ...'  │                 │
+│    │ ),                                                   │                 │
+│    │ base AS (                                            │                 │
+│    │   SELECT col1, col2, ...                             │                 │
+│    │   FROM raw.cop_observation_mariadb d                 │                 │
+│    │   LEFT JOIN raw.scene_mariadb s                      │                 │
+│    │   WHERE ...                                          │                 │
+│    │ ),                                                   │                 │
+│    │ unpivoted AS (                                       │                 │
+│    │   SELECT ..., 'RIFG' as product_name FROM cop_clean  │                 │
+│    │   UNION ALL                                          │                 │
+│    │   SELECT ..., 'RIFF' as product_name FROM base       │                 │
+│    │   UNION ALL                                          │                 │
+│    │   ... (8 product types: RIFG, RIFF, ...)             │                 │
+│    │ )                                                    │                 │
+│    │ INSERT INTO public.analytic_table_new                │                 │
+│    │ SELECT * FROM unpivoted;                             │                 │
 │    │                                                      │                 │
-│    │ Result: 123,456 rows inserted into shadow table     │                 │
+│    │ Result: 123,456 rows inserted into shadow table      │                 │
 │    └──────────────────────────────────────────────────────┘                 │
-│                       ↓                                                      │
+│                       ↓                                                     │
 │    ┌──────────────────────────────────────────────────────┐                 │
-│    │ Step 4: Create Indexes (11 total)                   │                 │
+│    │ Step 4: Create Indexes (11 total)                    │                 │
 │    │                                                      │                 │
-│    │ CREATE INDEX idx_at_obs_id ON analytic_table_new    │                 │
-│    │   (observation_id);                                 │                 │
+│    │ CREATE INDEX idx_at_obs_id ON analytic_table_new     │                 │
+│    │   (observation_id);                                  │                 │
 │    │                                                      │                 │
 │    │ CREATE INDEX idx_at_time_btree ON analytic_table_new │                 │
-│    │   (CMD_SSAR_START_DATETIME);                        │                 │
+│    │   (CMD_SSAR_START_DATETIME);                         │                 │
 │    │                                                      │                 │
-│    │ CREATE INDEX idx_at_cfg_time ON analytic_table_new  │                 │
-│    │   (SSAR_CONFIG_ID, CMD_SSAR_START_DATETIME);        │                 │
+│    │ CREATE INDEX idx_at_cfg_time ON analytic_table_new   │                 │
+│    │   (SSAR_CONFIG_ID, CMD_SSAR_START_DATETIME);         │                 │
 │    │                                                      │                 │
-│    │ ... (8 more indexes)                                │                 │
+│    │ ... (8 more indexes)                                 │                 │
 │    │                                                      │                 │
-│    │ Status: All indexes built, shadow table ready       │                 │
+│    │ Status: All indexes built, shadow table ready        │                 │
 │    └──────────────────────────────────────────────────────┘                 │
-│                       ↓                                                      │
+│                       ↓                                                     │
 │    ┌──────────────────────────────────────────────────────┐                 │
-│    │ Step 5: Build RC Cache (pre-agg chart data)         │                 │
+│    │ Step 5: Build RC Cache (pre-agg chart data)          │                 │
 │    │                                                      │                 │
-│    │ DELETE FROM public.rc_cache;                        │                 │
+│    │ DELETE FROM public.rc_cache;                         │                 │
 │    │                                                      │                 │
-│    │ INSERT INTO public.rc_cache                         │                 │
-│    │ (period_type, period_label, rc_id, count)           │                 │
-│    │ SELECT                                              │                 │
-│    │   'monthly' as period_type,                         │                 │
-│    │   TO_CHAR(CMD_SSAR_START_DATETIME, 'YYYY-MM'),      │                 │
-│    │   SSAR_CONFIG_ID as rc_id,                          │                 │
-│    │   COUNT(*) as count                                 │                 │
-│    │ FROM public.analytic_table_new                      │                 │
-│    │ GROUP BY period_type, period_label, rc_id;          │                 │
+│    │ INSERT INTO public.rc_cache                          │                 │
+│    │ (period_type, period_label, rc_id, count)            │                 │
+│    │ SELECT                                               │                 │
+│    │   'monthly' as period_type,                          │                 │
+│    │   TO_CHAR(CMD_SSAR_START_DATETIME, 'YYYY-MM'),       │                 │ 
+│    │   SSAR_CONFIG_ID as rc_id,                           │                 │
+│    │   COUNT(*) as count                                  │                 │
+│    │ FROM public.analytic_table_new                       │                 │
+│    │ GROUP BY period_type, period_label, rc_id;           │                 │
 │    │                                                      │                 │
-│    │ (Similar for weekly and yearly)                     │                 │
+│    │ (Similar for weekly and yearly)                      │                 │
 │    │                                                      │                 │
-│    │ Status: rc_cache populated, charts now instant      │                 │
+│    │ Status: rc_cache populated, charts now instant       │                 │
 │    └──────────────────────────────────────────────────────┘                 │
-│                       ↓                                                      │
+│                       ↓                                                     │
 │    ┌──────────────────────────────────────────────────────┐                 │
-│    │ Step 6: Refresh Materialized Views                  │                 │
+│    │ Step 6: Refresh Materialized Views                   │                 │
 │    │                                                      │                 │
-│    │ REFRESH MATERIALIZED VIEW CONCURRENTLY              │                 │
-│    │   public.mv_summary_counts;                         │                 │
+│    │ REFRESH MATERIALIZED VIEW CONCURRENTLY               │                 │
+│    │   public.mv_summary_counts;                          │                 │
 │    │                                                      │                 │
 │    │ (CONCURRENTLY = doesn't block reads during refresh)  │                 │
 │    │                                                      │                 │
-│    │ Status: mv_summary_counts updated                   │                 │
+│    │ Status: mv_summary_counts updated                    │                 │
 │    └──────────────────────────────────────────────────────┘                 │
-│                       ↓                                                      │
+│                       ↓                                                     │
 │    ┌──────────────────────────────────────────────────────┐                 │
-│    │ Step 7: BLUE-GREEN SWAP (Atomic, Zero Downtime)     │                 │
+│    │ Step 7: BLUE-GREEN SWAP (Atomic, Zero Downtime)      │                 │
 │    │                                                      │                 │
-│    │ BEGIN TRANSACTION;                                  │                 │
-│    │   ALTER TABLE analytic_table                        │                 │
-│    │     RENAME TO analytic_old;         (step 1)        │                 │
+│    │ BEGIN TRANSACTION;                                   │                 │
+│    │   ALTER TABLE analytic_table                         │                 │
+│    │     RENAME TO analytic_old;         (step 1)         │                 │
 │    │                                                      │                 │
-│    │   ALTER TABLE analytic_table_new                    │                 │
-│    │     RENAME TO analytic_table;       (step 2)        │                 │
+│    │   ALTER TABLE analytic_table_new                     │                 │
+│    │     RENAME TO analytic_table;       (step 2)         │                 │
 │    │                                                      │                 │
-│    │   DROP TABLE analytic_old CASCADE;  (step 3)        │                 │
-│    │ COMMIT;                                             │                 │
+│    │   DROP TABLE analytic_old CASCADE;  (step 3)         │                 │
+│    │ COMMIT;                                              │                 │
 │    │                                                      │                 │
-│    │ Timeline:                                           │                 │
-│    │ T0 (before):  analytic_table (LIVE)                │                 │
-│    │                analytic_table_new (shadow)          │                 │
+│    │ Timeline:                                            │                 │
+│    │ T0 (before):  analytic_table (LIVE)                  │                 │
+│    │                analytic_table_new (shadow)           │                 │
 │    │                                                      │                 │
-│    │ T1 (renaming): analytic_table → analytic_old        │                 │
-│    │                analytic_table_new → analytic_table  │                 │
-│    │                (all in one atomic COMMIT)           │                 │
+│    │ T1 (renaming): analytic_table → analytic_old         │                 │
+│    │                analytic_table_new → analytic_table   │                 │
+│    │                (all in one atomic COMMIT)            │                 │
 │    │                                                      │                 │
-│    │ T2 (after):   analytic_table (LIVE, new data)       │                 │
-│    │                analytic_old → dropped               │                 │
+│    │ T2 (after):   analytic_table (LIVE, new data)        │                 │
+│    │                analytic_old → dropped                │                 │
 │    │                                                      │                 │
-│    │ Status: Dashboard now reads new data, zero downtime │                 │
+│    │ Status: Dashboard now reads new data, zero downtime  │                 │
 │    └──────────────────────────────────────────────────────┘                 │
-│                       ↓                                                      │
+│                       ↓                                                     │
 │    ┌──────────────────────────────────────────────────────┐                 │
-│    │ Step 8: VACUUM & ANALYZE (outside transaction)      │                 │
+│    │ Step 8: VACUUM & ANALYZE (outside transaction)       │                 │
 │    │                                                      │                 │
-│    │ VACUUM ANALYZE public.analytic_table;               │                 │
+│    │ VACUUM ANALYZE public.analytic_table;                │                 │
 │    │                                                      │                 │
-│    │ (Cleans dead rows, updates table statistics)        │                 │
+│    │ (Cleans dead rows, updates table statistics)         │                 │
 │    │                                                      │                 │
-│    │ Status: Table optimized for future queries          │                 │
+│    │ Status: Table optimized for future queries           │                 │
 │    └──────────────────────────────────────────────────────┘                 │
-│                       ↓                                                      │
+│                       ↓                                                     │
 │    Record Phase 2 success in etl_runs:                                      │
 │    INSERT INTO public.etl_runs                                              │
-│    (status, phase, start_time, end_time, last_processed_time, rows_...)    │
-│    VALUES ('SUCCESS', 'TRANSFORM', '2024-01-15 10:15:00', '2024-01-15 ...  │
+│    (status, phase, start_time, end_time, last_processed_time, rows_...)     │
+│    VALUES ('SUCCESS', 'TRANSFORM', '2024-01-15 10:15:00', '2024-01-15 ...   │
 │                                                                             │
 │  Background Thread completes                                                │
 │                                                                             │
@@ -1747,26 +1747,26 @@ Dashboard data automatically refreshes with new analytic_table
 │  Response:  {                                                               │
 │              "status": "SUCCESS",                                           │
 │              "phase": "TRANSFORM",                                          │
-│              "time": "2024-01-15 15:45:30",  (IST)                         │
+│              "time": "2024-01-15 15:45:30",  (IST)                          │
 │              "rows_processed": 123456,                                      │
 │              "error": null                                                  │
 │            }                                                                │
 │              ↓                                                              │
 │  Frontend: etl_trigger.js updates header                                    │
-│            Show green ✓ "ETL completed: 2024-01-15 15:45:30"               │
+│            Show green ✓ "ETL completed: 2024-01-15 15:45:30"                │
 │            Auto-refresh all dashboard data                                  │
 │              ↓                                                              │
 │  USER SEES:                                                                 │
-│  ┌────────────────────────────────────────┐                                │
-│  │ ETL Status: ✓ SUCCESS (15:45:30)      │                                │
-│  │ Rows: 123,456                         │                                │
-│  │                                        │                                │
-│  │ Dashboard data automatically updated: │                                │
-│  │ - Observations table: 1,050 rows      │                                │
-│  │ - Analytics: 42 RC configs            │                                │
-│  │ - Charts: May 2024 data loaded        │                                │
-│  │ - Map: 850 polygons rendered          │                                │
-│  └────────────────────────────────────────┘                                │
+│  ┌────────────────────────────────────────┐                                 │
+│  │ ETL Status: ✓ SUCCESS (15:45:30)       │                                 │
+│  │ Rows: 123,456                          │                                 │
+│  │                                        │                                 │
+│  │ Dashboard data automatically updated:  │                                 │
+│  │ - Observations table: 1,050 rows       │                                 │
+│  │ - Analytics: 42 RC configs             │                                 │
+│  │ - Charts: May 2024 data loaded         │                                 │
+│  │ - Map: 850 polygons rendered           │                                 │
+│  └────────────────────────────────────────┘                                 │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -1893,46 +1893,46 @@ SELECT * FROM rc_cache WHERE period_type = 'monthly'
 
 ### **Frontend Files**
 
-| File | Responsibility |
-|---|---|
-| `index.html` | Single-page app entry, container divs |
-| `styles.css` | Dashboard UI styling |
-| `main.js` | App initialization, DOMContentLoaded, wires components |
-| `api.js` | Centralized fetch() calls, all backend communication |
-| `filters.js` | Filter UI toggles, collectFilters() function |
-| `data_table.js` | Paginated observations table rendering |
-| `map.js` | Leaflet map init, WKT polygon parsing, drawPolygons() |
-| `chart.js` | Bar chart (Chart.js) rendering with rc_cache data |
-| `analytics_table.js` | Summary counts widget from mv_summary_counts |
-| `ai_chat.js` | Chat UI, message history, LLM integration |
-| `pagination.js` | Page navigation logic |
-| `csv_export.js` | Download analytics table as CSV |
+|          File       |                     Responsibility                     |
+|---------------------|--------------------------------------------------------|
+| `index.html`        | Single-page app entry, container divs                  |
+| `styles.css`        | Dashboard UI styling                                   |
+| `main.js`           | App initialization, DOMContentLoaded, wires components |
+| `api.js`            | Centralized fetch() calls, all backend communication   |
+| `filters.js`        | Filter UI toggles, collectFilters() function           |
+| `data_table.js`     | Paginated observations table rendering                 |
+| `map.js`            |  Leaflet map init, WKT polygon parsing, drawPolygons() |
+| `chart.js`          | Bar chart (Chart.js) rendering with rc_cache data      |
+| `analytics_table.js`| Summary counts widget from mv_summary_counts           |
+| `ai_chat.js`        | Chat UI, message history, LLM integration              |
+| `pagination.js`     | Page navigation logic                                  |
+| `csv_export.js`     | Download analytics table as CSV                        |
 
 ### **Backend Files**
 
-| File | Responsibility |
-|---|---|
-| `app.py` | Flask entry point, blueprint registration, CORS |
-| `db/connection.py` | psycopg2 pool, get_db_connection() |
-| `db/queries.py` | Centralized SQL strings, build_where_clause() |
-| `routes/observations.py` | GET /api/search (paginated table) |
-| `routes/analytics.py` | GET /api/analytics (summary counts) |
-| `routes/charts.py` | GET /api/rc_stats (chart data) |
-| `routes/map.py` | GET /api/map_polygons (WKT geometries) |
-| `routes/ai.py` | POST /api/ai/query (text-to-SQL) |
-| `routes/etl.py` | GET /api/etl/status, POST /api/etl/trigger |
-| `services/ai_service.py` | answer_query(), LLM integration stub |
-| `services/analytics_service.py` | get_analytics_counts() → mv query |
-| `services/pagination_service.py` | get_page_params(), calc_total_pages() |
+|               File               |                 Responsibility                  |
+|----------------------------------|-------------------------------------------------|
+| `app.py`                         | Flask entry point, blueprint registration, CORS |
+| `db/connection.py`               | psycopg2 pool, get_db_connection()              |
+| `db/queries.py`                  | Centralized SQL strings, build_where_clause()   |
+| `routes/observations.py`         | GET /api/search (paginated table)               |
+| `routes/analytics.py`            | GET /api/analytics (summary counts)             |
+| `routes/charts.py`               | GET /api/rc_stats (chart data)                  | 
+| `routes/map.py`                  | GET /api/map_polygons (WKT geometries)          |
+| `routes/ai.py`                   | POST /api/ai/query (text-to-SQL)                |
+| `routes/etl.py`                  | GET /api/etl/status, POST /api/etl/trigger      |
+| `services/ai_service.py`         | answer_query(), LLM integration stub            |
+| `services/analytics_service.py`  | get_analytics_counts() → mv query               |
+| `services/pagination_service.py` | get_page_params(), calc_total_pages()           |
 
 ### **ETL Files**
 
-| File | Responsibility |
-|---|---|
-| `etl_service.py` | Flask entry, /etl/trigger, /etl/status, threading |
-| `core/db.py` | Connection factories for MySQL/MariaDB/PostgreSQL |
-| `core/phase1_raw_load.py` | Dynamic table discovery, batch copy (500 rows) |
-| `core/phase2_transform.py` | CTE pipeline, blue-green swap, index building |
+|             File            |                    Responsibility                    |
+|-----------------------------|------------------------------------------------------|
+| `etl_service.py`            | Flask entry, /etl/trigger, /etl/status, threading    |
+| `core/db.py`                | Connection factories for MySQL/MariaDB/PostgreSQL    |
+| `core/phase1_raw_load.py`   | Dynamic table discovery, batch copy (500 rows)       |
+| `core/phase2_transform.py`  | CTE pipeline, blue-green swap, index building        |
 
 ### **Database Files**
 
