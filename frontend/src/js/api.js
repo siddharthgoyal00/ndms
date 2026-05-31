@@ -3,8 +3,9 @@
 // components never call fetch() directly — they call these functions
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BASE = "http://localhost:5001"   // ← ETL container (dev only)
+const BASE = "http://localhost:5000"   // ← ETL container (dev only)
                                         //   change to backend URL when backend is ready
+                                        
 
 const API = {
 

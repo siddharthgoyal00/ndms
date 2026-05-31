@@ -27,29 +27,58 @@ logger = logging.getLogger(__name__)
 
 # ── ETL audit helper ──────────────────────────────────────────────────────────
 
+# def record_run(status, phase, start_time, rows=None, error=None):
+#     """
+#     Writes one row to etl_runs audit table.
+#     Called after Phase 1 and after Phase 2 complete or fail.
+#     last_processed_time is set to start_time on SUCCESS — used as
+#     the watermark for the next ETL run's incremental load.
+#     """
+#     try:
+#         conn   = get_pg_conn()
+#         cursor = conn.cursor()
+#         cursor.execute("""
+#             INSERT INTO public.etl_runs
+#                 (status, phase, start_time, end_time,
+#                  last_processed_time, rows_processed, error_message)
+#             VALUES (%s, %s, %s, NOW(), %s, %s, %s)
+#         """, (
+#             status,
+#             phase,
+#             start_time,
+#             start_time if status == "SUCCESS" else None,
+#             rows,
+#             error
+#         ))
+#         conn.commit()
+#         cursor.close()
+#         conn.close()
+#     except Exception as e:
+#         logger.error(f"Failed to write etl_runs record: {e}")
 def record_run(status, phase, start_time, rows=None, error=None):
-    """
-    Writes one row to etl_runs audit table.
-    Called after Phase 1 and after Phase 2 complete or fail.
-    last_processed_time is set to start_time on SUCCESS — used as
-    the watermark for the next ETL run's incremental load.
-    """
     try:
         conn   = get_pg_conn()
         cursor = conn.cursor()
+
+        # last_processed_time = max data timestamp, not ETL run time
+        # This way next run's watermark filters from where data left off
+        # not from when the ETL ran
+        if status == "SUCCESS" and phase == "COMPLETE":
+            cursor.execute("""
+                SELECT MAX(CMD_SSAR_START_DATETIME)
+                FROM public.analytic_table
+            """)
+            row = cursor.fetchone()
+            last_processed = row[0] if row and row[0] else start_time
+        else:
+            last_processed = None
+
         cursor.execute("""
             INSERT INTO public.etl_runs
                 (status, phase, start_time, end_time,
                  last_processed_time, rows_processed, error_message)
             VALUES (%s, %s, %s, NOW(), %s, %s, %s)
-        """, (
-            status,
-            phase,
-            start_time,
-            start_time if status == "SUCCESS" else None,
-            rows,
-            error
-        ))
+        """, (status, phase, start_time, last_processed, rows, error))
         conn.commit()
         cursor.close()
         conn.close()
