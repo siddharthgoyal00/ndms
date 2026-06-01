@@ -11,4 +11,4 @@ SELECT COUNT(*) FROM public.analytic_table;
 SELECT product_name, COUNT(*) FROM public.analytic_table GROUP BY product_name;
 SELECT MIN(CMD_SSAR_START_DATETIME), MAX(CMD_SSAR_START_DATETIME) FROM public.analytic_table;
 
- python -m http.server 8080
+ python -m http.server 8080 
