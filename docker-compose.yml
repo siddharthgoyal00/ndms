@@ -165,8 +165,9 @@ services:
      networks:
        - app_net
      depends_on:
-     postgres:
+      postgres:
         condition: service_healthy
+     restart: on-failure
   # ── 6. Frontend — Nginx ────────────────────────────────────────────────────
   frontend:
     image: nginx:alpine
