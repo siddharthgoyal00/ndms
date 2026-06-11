@@ -91,7 +91,7 @@ def create_shadow_table(cursor):
             SESS_ID                 TEXT,
             CMD_SSAR_START_DATETIME TIMESTAMP,
             CMD_SSAR_END_DATETIME   TEXT,
-            SSAR_CONFIG_ID          TEXT,
+            SSAR_CONFIG_ID          INTEGER,
             DATATAKE_ID             TEXT,
             L0_status               TEXT,
             DUMP_ORBIT              INTEGER,
@@ -103,7 +103,7 @@ def create_shadow_table(cursor):
             crid_id                 TEXT,
             WKT_POLYGON             TEXT,
             product_name            TEXT,
-            product_workorder_id    TEXT,
+            product_workorder_id    INTEGER,
             product_status          TEXT
         )
     """)

@@ -13,6 +13,7 @@ function loadData() {
     // observation table + pagination
     API.search(currentFilters, currentPage)
         .then(data => {
+             console.log(data.observations[0])
             renderObservationTable(data.observations)
             renderPagination(data.total_pages, currentPage, (page) => {
                 currentPage = page
