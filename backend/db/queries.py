@@ -106,6 +106,18 @@ COUNT_QUERY = "SELECT COUNT(*) AS total FROM analytic_table a "
 # ── Analytics summary counts ──────────────────────────────────────────────────
 
 ANALYTICS_QUERY = """
+    WITH obs_units AS (
+        SELECT
+            a.observation_id,
+            a.track,
+            a.frame,
+            MAX(CASE WHEN a.product_name = 'RUNW' THEN LOWER(a.product_status) END) AS runw_status,
+            MAX(CASE WHEN a.product_name = 'GUNW' THEN LOWER(a.product_status) END) AS gunw_status,
+            MAX(CASE WHEN a.product_name = 'GCOV' THEN LOWER(a.product_status) END) AS gcov_status
+        FROM analytic_table a
+        {where}
+        GROUP BY a.observation_id, a.track, a.frame
+    )
     SELECT
         COUNT(DISTINCT (a.observation_id, a.track, a.frame))         AS observation_count,
         COUNT(DISTINCT a.SESS_ID)                                     AS session_count,
@@ -115,8 +127,14 @@ ANALYTICS_QUERY = """
               END)                                                     AS rc_count,
         SUM(CASE WHEN LOWER(a.L0_status) = 'completed'     THEN 1 ELSE 0 END) AS l0_success_count,
         SUM(CASE WHEN LOWER(a.L0_status) = 'not completed' THEN 1 ELSE 0 END) AS l0_failed_count,
-        SUM(CASE WHEN LOWER(a.product_status) = 'completed'     THEN 1 ELSE 0 END) AS dpgs_success_count,
-        SUM(CASE WHEN LOWER(a.product_status) = 'not completed' THEN 1 ELSE 0 END) AS dpgs_failed_count
+        (SELECT COUNT(*) FROM obs_units
+         WHERE runw_status = 'completed'
+           AND gunw_status = 'completed'
+           AND gcov_status = 'completed')                              AS dpgs_success_count,
+        (SELECT COUNT(*) FROM obs_units
+         WHERE runw_status != 'completed' OR runw_status IS NULL
+            OR gunw_status != 'completed' OR gunw_status IS NULL
+            OR gcov_status != 'completed' OR gcov_status IS NULL)      AS dpgs_failed_count
     FROM analytic_table a
 """
 
