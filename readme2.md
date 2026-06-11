@@ -1798,13 +1798,13 @@ Speedup: ~5x faster than full table scan
 
 ### **Index Types & Use Cases**
 
-| Index | Use Case | Example |
-|---|---|---|
-| **B-tree** | Exact match, range, sorting | `WHERE observation_id = 'OBS001'` or `WHERE date > '2024-01-01'` |
-| **BRIN** | Large sorted columns (compact) | `WHERE CMD_SSAR_START_DATETIME BETWEEN ...` (minimal memory) |
-| **Partial** | Subset of rows (sparse) | `WHERE WKT_POLYGON IS NOT NULL` (only ~20% of rows) |
-| **Composite** | Multiple columns together | `WHERE SSAR_CONFIG_ID = 'RC001' AND CMD_SSAR_START_DATETIME ...` |
-| **Covering** | Includes extra columns | Avoids heap lookup (index has all needed columns) |
+|      Index    |          Use Case              |                            Example                                  |
+|---------------|--------------------------------|---------------------------------------------------------------------|
+| **B-tree**    | Exact match, range, sorting    | `WHERE observation_id = 'OBS001'` or `WHERE date > '2024-01-01'`    |
+| **BRIN**      | Large sorted columns (compact) | `WHERE CMD_SSAR_START_DATETIME BETWEEN ...` (minimal memory)        |
+| **Partial**   | Subset of rows (sparse)        | `WHERE WKT_POLYGON IS NOT NULL` (only ~20% of rows)                 |
+| **Composite** | Multiple columns together      | `WHERE SSAR_CONFIG_ID = 'RC001' AND CMD_SSAR_START_DATETIME ...`    |
+| **Covering**  | Includes extra columns         | Avoids heap lookup (index has all needed columns)                   |
 
 ### **Blue-Green Swap Benefits**
 

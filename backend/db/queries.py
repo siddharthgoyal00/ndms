@@ -107,10 +107,12 @@ COUNT_QUERY = "SELECT COUNT(*) AS total FROM analytic_table a "
 
 ANALYTICS_QUERY = """
     SELECT
-        COUNT(DISTINCT a.obs_key)       AS observation_count,
-        COUNT(DISTINCT a.SESS_ID)       AS session_count,
-        COUNT(DISTINCT a.DATATAKE_ID)   AS datatake_count,
-        COUNT(DISTINCT a.SSAR_CONFIG_ID) AS rc_count,
+        COUNT(DISTINCT (a.observation_id, a.track, a.frame))         AS observation_count,
+        COUNT(DISTINCT a.SESS_ID)                                     AS session_count,
+        COUNT(DISTINCT a.DATATAKE_ID)                                 AS datatake_count,
+        COUNT(DISTINCT CASE WHEN a.SSAR_CONFIG_ID IS NOT NULL 
+              THEN (a.observation_id, a.track, a.frame, a.SSAR_CONFIG_ID) 
+              END)                                                     AS rc_count,
         SUM(CASE WHEN LOWER(a.L0_status) = 'completed'     THEN 1 ELSE 0 END) AS l0_success_count,
         SUM(CASE WHEN LOWER(a.L0_status) = 'not completed' THEN 1 ELSE 0 END) AS l0_failed_count,
         SUM(CASE WHEN LOWER(a.product_status) = 'completed'     THEN 1 ELSE 0 END) AS dpgs_success_count,

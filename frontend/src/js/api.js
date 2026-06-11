@@ -50,5 +50,7 @@ const API = {
             body: JSON.stringify({ query: message })
         }).then(r => r.json())
     }
+   
+
 
 }

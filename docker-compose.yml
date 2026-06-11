@@ -182,6 +182,37 @@ services:
     depends_on:
       - etl_service
     restart: unless-stopped
+  # ── 6. AI Service — Text-to-SQL ───────────────────────────────────────────────
+  ai_service:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    image: nisar_ai:latest
+    container_name: ai_service
+    ports:
+      - "5002:5002"
+    environment:
+      # Postgres — same creds as backend/etl
+      PG_HOST:     "postgres_db"
+      PG_DB:       "analytics_db"
+      PG_USER:     "postgres"
+      PG_PASSWORD: "postgres"
+      PG_PORT:     5432
+      # Ollama — container name is the hostname inside app_net
+      OLLAMA_HOST:  "http://deepseek_api:11434"
+      OLLAMA_MODEL: "deepseek-coder:6.7b-instruct"
+      LLM_TIMEOUT:  "120"
+      # Hard cap on rows returned per query
+      QUERY_MAX_ROWS: "500"
+    networks:
+      - app_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      llm_model:
+        condition: service_healthy
+    restart: on-failure
+
 
 # ── Volumes ────────────────────────────────────────────────────────────────────
 volumes:
