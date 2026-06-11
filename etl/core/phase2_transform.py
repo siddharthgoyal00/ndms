@@ -91,7 +91,7 @@ def create_shadow_table(cursor):
             SESS_ID                 TEXT,
             CMD_SSAR_START_DATETIME TIMESTAMP,
             CMD_SSAR_END_DATETIME   TEXT,
-            SSAR_CONFIG_ID          INTEGER,
+            SSAR_CONFIG_ID          TEXT,
             DATATAKE_ID             TEXT,
             L0_status               TEXT,
             DUMP_ORBIT              INTEGER,
@@ -103,7 +103,7 @@ def create_shadow_table(cursor):
             crid_id                 TEXT,
             WKT_POLYGON             TEXT,
             product_name            TEXT,
-            product_workorder_id    INTEGER,
+            product_workorder_id    TEXT,
             product_status          TEXT
         )
     """)
@@ -162,10 +162,10 @@ def populate_shadow_table(cursor, watermark: datetime.datetime):
                     || '_' || COALESCE(s.frame::TEXT, '')
                     || '_' || COALESCE(s.track::TEXT, '')  AS obs_key,
                 co.cmd_ssar_start_datetime,
-                co.cmd_ssar_end_datetime,
-                co.ssar_config_id,
-                co.datatake_id,
-                co.lob_status                              AS l0_status,
+                co.cmd_ssar_end_datetime::TEXT,
+                co.ssar_config_id::TEXT,
+                co.datatake_id::TEXT,
+                co.lob_status::TEXT                          AS l0_status,
                 co.dumping_orbit,
                 s.track,
                 s.frame,
