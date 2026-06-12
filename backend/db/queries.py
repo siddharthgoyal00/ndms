@@ -111,8 +111,8 @@ ANALYTICS_QUERY = """
             a.observation_id,
             a.track,
             a.frame,
-            MAX(CASE WHEN a.product_name = 'RUNW' THEN LOWER(a.product_status) END) AS runw_status,
-            MAX(CASE WHEN a.product_name = 'GUNW' THEN LOWER(a.product_status) END) AS gunw_status,
+            MAX(CASE WHEN a.product_name = 'RSLC' THEN LOWER(a.product_status) END) AS runw_status,
+            MAX(CASE WHEN a.product_name = 'GSLC' THEN LOWER(a.product_status) END) AS gunw_status,
             MAX(CASE WHEN a.product_name = 'GCOV' THEN LOWER(a.product_status) END) AS gcov_status
         FROM analytic_table a
         {where}
@@ -138,6 +138,79 @@ ANALYTICS_QUERY = """
     FROM analytic_table a
 """
 
+# ── Analytics chart (filter-independent, time-bucketed) ───────────────────────
+
+ANALYTICS_CHART_PERIOD_EXPR = {
+    "till_now": "'All Time'",
+    "daily":    "TO_CHAR(a.CMD_SSAR_START_DATETIME, 'YYYY-MM-DD')",
+    "weekly":   "TO_CHAR(a.CMD_SSAR_START_DATETIME, 'IYYY-IW')",
+    "monthly":  "TO_CHAR(a.CMD_SSAR_START_DATETIME, 'YYYY-MM')",
+    "yearly":   "TO_CHAR(a.CMD_SSAR_START_DATETIME, 'YYYY')",
+}
+
+ANALYTICS_CHART_TEMPLATE = """
+    WITH obs_units AS (
+        SELECT
+            a.observation_id,
+            a.track,
+            a.frame,
+            __PERIOD_EXPR__ AS period_label,
+            MAX(CASE WHEN a.product_name = 'RSLC' THEN LOWER(a.product_status) END) AS runw_status,
+            MAX(CASE WHEN a.product_name = 'GSLC' THEN LOWER(a.product_status) END) AS gunw_status,
+            MAX(CASE WHEN a.product_name = 'GCOV' THEN LOWER(a.product_status) END) AS gcov_status
+        FROM analytic_table a
+        WHERE a.CMD_SSAR_START_DATETIME IS NOT NULL
+        GROUP BY a.observation_id, a.track, a.frame, __PERIOD_EXPR__
+    ),
+    dpgs_agg AS (
+        SELECT
+            period_label,
+            SUM(CASE WHEN runw_status = 'completed'
+                      AND gunw_status = 'completed'
+                      AND gcov_status = 'completed'
+                     THEN 1 ELSE 0 END)                       AS dpgs_success_count,
+            SUM(CASE WHEN runw_status IS NULL OR gunw_status IS NULL OR gcov_status IS NULL
+                      OR runw_status != 'completed'
+                      OR gunw_status != 'completed'
+                      OR gcov_status != 'completed'
+                     THEN 1 ELSE 0 END)                       AS dpgs_failed_count
+        FROM obs_units
+        GROUP BY period_label
+    ),
+    base_agg AS (
+        SELECT
+            __PERIOD_EXPR__ AS period_label,
+            COUNT(DISTINCT (a.observation_id, a.track, a.frame))            AS observation_count,
+            COUNT(DISTINCT CASE WHEN a.SSAR_CONFIG_ID IS NOT NULL
+                  THEN (a.observation_id, a.track, a.frame, a.SSAR_CONFIG_ID)
+                  END)                                                       AS rc_count,
+            SUM(CASE WHEN LOWER(a.L0_status) = 'completed'     THEN 1 ELSE 0 END) AS l0_success_count,
+            SUM(CASE WHEN LOWER(a.L0_status) = 'not completed' THEN 1 ELSE 0 END) AS l0_failed_count
+        FROM analytic_table a
+        WHERE a.CMD_SSAR_START_DATETIME IS NOT NULL
+        GROUP BY __PERIOD_EXPR__
+    )
+    SELECT
+        b.period_label                       AS label,
+        b.l0_success_count,
+        b.l0_failed_count,
+        COALESCE(d.dpgs_success_count, 0)    AS dpgs_success_count,
+        COALESCE(d.dpgs_failed_count, 0)     AS dpgs_failed_count,
+        b.rc_count,
+        b.observation_count
+    FROM base_agg b
+    LEFT JOIN dpgs_agg d ON b.period_label = d.period_label
+    ORDER BY b.period_label ASC
+"""
+
+
+def build_analytics_chart_query(period_type: str) -> str:
+    """
+    Returns the analytics chart SQL for the given period type.
+    Unknown types fall back to 'till_now'.
+    """
+    expr = ANALYTICS_CHART_PERIOD_EXPR.get(period_type, ANALYTICS_CHART_PERIOD_EXPR["till_now"])
+    return ANALYTICS_CHART_TEMPLATE.replace("__PERIOD_EXPR__", expr)
 
 # ── Map polygons ──────────────────────────────────────────────────────────────
 

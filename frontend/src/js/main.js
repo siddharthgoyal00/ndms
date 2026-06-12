@@ -40,8 +40,8 @@ document.addEventListener("DOMContentLoaded", function () {
     // init map
     initMap()
 
-    // init chart — default monthly
-    loadRCChart("monthly")
+    // init chart — default till_now
+    loadRCChart("till_now")
 
     // chart type switcher
     document.getElementById("chartTypeSelect")

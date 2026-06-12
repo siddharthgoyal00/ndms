@@ -150,14 +150,7 @@ body {
 .status-dot.failed  { background: #dc3545; }
 .status-dot.running { background: #ffc107; }
 
-/* ── LAYOUT ───────────────────────────────────────────────────────────────── */
-/*
-    3 direct children of .main-container:
-      1. .filters-sidebar  — fixed 280px
-      2. .chart-area       — takes half the remaining space
-      3. .map-area         — takes half the remaining space
-*/
-/* Replace .main-container */
+
 .main-container {
     display: grid;
     grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr);

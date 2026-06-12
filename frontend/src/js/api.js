@@ -37,6 +37,10 @@ const API = {
         return fetch(`${BASE}/etl/status`).then(r => r.json())
     },
 
+    analyticsChart(type = "till_now") {
+        return fetch(`${BASE}/analytics_chart?type=${type}`).then(r => r.json())
+    },
+
     // manually trigger ETL run  ← dev only, remove before prod
     triggerEtl() {
         return fetch(`${BASE}/etl/trigger`, { method: "POST" }).then(r => r.json())
