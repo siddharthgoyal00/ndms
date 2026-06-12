@@ -1,4 +1,3 @@
-// chart.js
 let rcChartInstance = null
 
 function loadRCChart(type = "monthly") {
@@ -15,6 +14,7 @@ function loadRCChart(type = "monthly") {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,        // ← THIS is the critical fix
                 plugins: { legend: { display: false } },
                 scales: {
                     x: { title: { display: true, text: type.toUpperCase() } },

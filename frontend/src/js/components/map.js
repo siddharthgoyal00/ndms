@@ -1,7 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// map.js  —  Leaflet map, polygon rendering
-// ─────────────────────────────────────────────────────────────────────────────
-
 let map
 let polygonLayer
 
@@ -15,7 +11,10 @@ function initMap() {
 
     polygonLayer = L.layerGroup().addTo(map)
 
-    // load all polygons on startup (no filters)
+    // Give the browser one frame to finish grid layout, then tell Leaflet
+    // to recalculate its container dimensions
+    setTimeout(() => map.invalidateSize(), 100)   // ← THIS makes the map render
+
     API.mapPolygons()
         .then(data => drawPolygons(data.polygons))
         .catch(err => console.error("Initial map load error:", err))
@@ -45,7 +44,6 @@ function drawWKTPolygon(wkt) {
     L.polygon(normalized, { color: "red", weight: 2 }).addTo(polygonLayer)
 }
 
-// prevents polygons from drawing across the antimeridian
 function normalizeLongitudes(latlngs) {
     return latlngs.map((point, i) => {
         let [lat, lon] = point

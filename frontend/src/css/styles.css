@@ -78,7 +78,6 @@ body {
     letter-spacing: -0.5px;
 }
 
-/* nav actions wrapper — holds ETL trigger + chat toggle */
 .nav-actions {
     display: flex;
     align-items: center;
@@ -107,7 +106,7 @@ body {
     box-shadow: none;
 }
 
-/* ETL trigger button — dev only */
+/* ETL trigger button */
 .etl-trigger-btn {
     background: #1d4ed8;
     color: #ffffff;
@@ -152,11 +151,28 @@ body {
 .status-dot.running { background: #ffc107; }
 
 /* ── LAYOUT ───────────────────────────────────────────────────────────────── */
+/*
+    3 direct children of .main-container:
+      1. .filters-sidebar  — fixed 280px
+      2. .chart-area       — takes half the remaining space
+      3. .map-area         — takes half the remaining space
+*/
+/* Replace .main-container */
 .main-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr) minmax(0, 1fr);
     gap: 20px;
     margin-bottom: 20px;
-    margin-top: 50px;
+    margin-top: 90px;
+    width: 100%;
+    box-sizing: border-box;
+    align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+    .main-container {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* ── FILTERS SIDEBAR ──────────────────────────────────────────────────────── */
@@ -165,9 +181,9 @@ body {
     color: white;
     padding: 20px;
     border-radius: 10px;
-    width: 400px;
-    flex-shrink: 0;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
 }
 
 .filters-title {
@@ -238,7 +254,7 @@ body {
 .toggle-switch-container.active .toggle-switch-circle { left: 21px; }
 
 .filter-input {
-    width: 180px;
+    width: 130px;
     height: 30px;
     background-color: #ffffff;
     border: none;
@@ -268,13 +284,14 @@ body {
 .chart-area {
     background-color: #9fb3a2;
     border-radius: 10px;
-    flex-grow: 1;
     display: flex;
     flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
     padding: 16px;
-    min-height: 350px;
+    box-sizing: border-box;
+    min-height: 450px;
+    overflow: hidden;
+    min-width: 0;      /* ← add this */
+    width: 100%;       /* ← add this */
 }
 
 .chart-toolbar {
@@ -285,6 +302,7 @@ body {
     margin-bottom: 16px;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    flex-shrink: 0;
 }
 
 .toolbar-title {
@@ -316,17 +334,41 @@ body {
     background: rgba(0, 0, 0, 0.8);
 }
 
+/* KEY: position:relative parent + absolute canvas stops zoom-growth bug */
 .chart-content {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    position: relative;
+    min-height: 350px;
+    min-width: 0;
 }
 
-/* ── MAP ──────────────────────────────────────────────────────────────────── */
+.chart-content canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ── MAP AREA ─────────────────────────────────────────────────────────────── */
+.map-area {
+    background-color: #9fb3a2;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+    box-sizing: border-box;
+    min-height: 450px;
+    min-width: 0;      /* ← add this */
+    width: 100%;       /* ← add this */
+}
+
+/* Leaflet needs explicit dimensions — flex:1 fills the remaining height */
 #map {
-    height: 635px;
+    flex: 1;
     width: 100%;
+    min-height: 0;
+    border-radius: 6px;
 }
 
 /* ── ANALYTIC TABLE ───────────────────────────────────────────────────────── */
@@ -615,14 +657,7 @@ input:focus, select:focus {
 
 input[type="datetime-local"] { color-scheme: light; }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   AI Chat Widget Styles
-   Add these rules to your existing styles.css
-   ───────────────────────────────────────────────────────────────────────────── */
-
-
-/* ── Chat messages ─────────────────────────────────────────────────────────── */
-
+/* ── CHAT MESSAGES ────────────────────────────────────────────────────────── */
 .chat-msg {
     margin: 8px 0;
     padding: 10px 14px;
@@ -648,9 +683,7 @@ input[type="datetime-local"] { color-scheme: light; }
     border-bottom-left-radius: 3px;
 }
 
-
-/* ── Thinking dots ─────────────────────────────────────────────────────────── */
-
+/* ── THINKING DOTS ────────────────────────────────────────────────────────── */
 .chat-msg--thinking {
     display: flex;
     align-items: center;
@@ -674,15 +707,13 @@ input[type="datetime-local"] { color-scheme: light; }
     40%           { transform: scale(1.0); opacity: 1.0; }
 }
 
-
-/* ── SQL collapsible block ─────────────────────────────────────────────────── */
-
+/* ── SQL BLOCK ────────────────────────────────────────────────────────────── */
 .sql-block {
     margin: 6px 0;
     border: 1px solid #dadce0;
     border-radius: 8px;
     overflow: hidden;
-    background: #282c34;   /* dark code background */
+    background: #282c34;
 }
 
 .sql-block summary {
@@ -697,9 +728,7 @@ input[type="datetime-local"] { color-scheme: light; }
     text-transform: uppercase;
 }
 
-.sql-block summary:hover {
-    background: #272b30;
-}
+.sql-block summary:hover { background: #272b30; }
 
 .sql-block pre {
     margin: 0;
@@ -714,9 +743,7 @@ input[type="datetime-local"] { color-scheme: light; }
     white-space: pre;
 }
 
-
-/* ── Validation status pill ────────────────────────────────────────────────── */
-
+/* ── STATUS PILLS ─────────────────────────────────────────────────────────── */
 .status-pill {
     display: inline-block;
     margin: 6px 0;
@@ -738,18 +765,13 @@ input[type="datetime-local"] { color-scheme: light; }
     border: 1px solid #f5b8b5;
 }
 
-
-/* ── Result summary line ───────────────────────────────────────────────────── */
-
+/* ── RESULT TABLE ─────────────────────────────────────────────────────────── */
 .result-summary {
     margin: 6px 0 4px;
     font-size: 0.78rem;
     color: #5f6368;
     font-style: italic;
 }
-
-
-/* ── Result table ──────────────────────────────────────────────────────────── */
 
 .result-table-wrap {
     margin-top: 6px;
@@ -794,16 +816,8 @@ input[type="datetime-local"] { color-scheme: light; }
     text-overflow: ellipsis;
 }
 
-.result-table tbody tr:hover {
-    background: #f8f9fa;
-}
-
-.result-table tbody tr:last-child td {
-    border-bottom: none;
-}
-
-
-/* ── Truncation note ───────────────────────────────────────────────────────── */
+.result-table tbody tr:hover { background: #f8f9fa; }
+.result-table tbody tr:last-child td { border-bottom: none; }
 
 .result-truncation-note {
     margin: 6px 0 0;
@@ -814,9 +828,6 @@ input[type="datetime-local"] { color-scheme: light; }
     border-top: 1px solid #dadce0;
     text-align: center;
 }
-
-
-/* ── Empty / error states ──────────────────────────────────────────────────── */
 
 .result-empty {
     margin: 6px 0 0;
