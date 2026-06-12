@@ -11,9 +11,7 @@ function initMap() {
 
     polygonLayer = L.layerGroup().addTo(map)
 
-    // Give the browser one frame to finish grid layout, then tell Leaflet
-    // to recalculate its container dimensions
-    setTimeout(() => map.invalidateSize(), 100)   // ← THIS makes the map render
+    setTimeout(() => map.invalidateSize(), 100)
 
     API.mapPolygons()
         .then(data => drawPolygons(data.polygons))
@@ -27,21 +25,28 @@ function drawPolygons(rows) {
     rows.forEach(row => {
         if (drawnObs.has(row.observation_id)) return
         drawnObs.add(row.observation_id)
-        if (row.WKT_POLYGON) drawWKTPolygon(row.WKT_POLYGON)
+        const wkt = row.wkt_polygon || row.WKT_POLYGON   // ← handles both cases
+        if (wkt) drawWKTPolygon(wkt)
     })
 }
 
 function drawWKTPolygon(wkt) {
-    const coordsText = wkt.replace("POLYGON((", "").replace("))", "")
-    const pairs = coordsText.split(",")
-
-    const latlngs = pairs.map(p => {
-        const parts = p.trim().split(" ")
-        return [parseFloat(parts[0]), parseFloat(parts[1])]
+    let coordsText = wkt
+        .replace("POLYGON((", "")
+        .replace("))", "")
+    let pairs = coordsText.split(",")
+    let latlngs = pairs.map(p => {
+        let parts = p.trim().split(" ")
+        return [
+            parseFloat(parts[0]),  // latitude
+            parseFloat(parts[1])   // longitude
+        ]
     })
-
-    const normalized = normalizeLongitudes(latlngs)
-    L.polygon(normalized, { color: "red", weight: 2 }).addTo(polygonLayer)
+    let normalizedLatlngs = normalizeLongitudes(latlngs)
+    L.polygon(normalizedLatlngs, {
+        color: 'red',
+        weight: 2
+    }).addTo(polygonLayer)
 }
 
 function normalizeLongitudes(latlngs) {
@@ -49,7 +54,7 @@ function normalizeLongitudes(latlngs) {
         let [lat, lon] = point
         if (i > 0) {
             const prevLon = latlngs[i - 1][1]
-            const diff    = lon - prevLon
+            const diff = lon - prevLon
             if (diff > 180)  lon -= 360
             if (diff < -180) lon += 360
         }
